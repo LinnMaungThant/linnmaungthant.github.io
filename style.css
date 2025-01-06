@@ -1,0 +1,98 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f2f2f2;
+    margin: 20px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.container {
+    max-width: 400px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+h2 {
+    text-align: center;
+}
+
+form div {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+input:focus {
+    border-color: #28a745;
+    outline: none;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+.error {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin-top: 5px;
+    display: none;
+}
+
+.success {
+    color: #28a745;
+    font-size: 1.1em;
+    margin-top: 20px;
+    text-align: center;
+    display: none;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+body.dark-mode .container {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+body.dark-mode input {
+    background-color: #333;
+    color: #fff;
+    border-color: #555;
+}
+
+body.dark-mode button {
+    background-color: #444;
+    color: #fff;
+}
+
+body.dark-mode button:hover {
+    background-color: #555;
+}
