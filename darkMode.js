@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const toggleButton = document.getElementById('darkModeToggle');
-    const elements = [document.documentElement, document.querySelector('.container')];
+    const elements = [document.body, document.querySelector('.container')];
     const darkModeClass = 'dark-mode';
 
     // Load dark mode preference
@@ -9,8 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     toggleButton.addEventListener('click', () => {
-        const isDarkMode = elements[0].classList.toggle(darkModeClass);
-        elements[1]?.classList.toggle(darkModeClass);
+        const isDarkMode = document.body.classList.toggle(darkModeClass);
+        elements[1]?.classList.toggle(darkModeClass); // Toggle .container
 
         // Save or remove preference
         localStorage.setItem('darkMode', isDarkMode ? 'enabled' : '');
